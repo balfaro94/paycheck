@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Calculadora de Salario Neto - El Salvador</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --card: #1a1d24;
+    --card2: #20242c;
+    --border: #2c313c;
+    --text: #e8eaed;
+    --muted: #8b929e;
+    --accent: #3b9c6f;
+    --accent2: #4fb583;
+    --warn: #d97757;
+    --danger: #e0586b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 0;
+    padding: 24px;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; }
+  h1 { font-size: 20px; margin-bottom: 4px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+  }
+  .card h2 {
+    font-size: 15px;
+    margin: 0 0 14px 0;
+    color: var(--accent2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  label {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 4px;
+    margin-top: 10px;
+  }
+  input[type=number] {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card2);
+    color: var(--text);
+    font-size: 14px;
+  }
+  input[type=number]:focus { outline: 1px solid var(--accent); }
+  .hint { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .results {
+    margin-top: 16px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    border-radius: 12px;
+    padding: 18px;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; color: var(--muted); font-weight: 500; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  td { padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr.total td { font-weight: 600; border-top: 2px solid var(--border); border-bottom: none; }
+  .neto { color: var(--accent2); }
+  .descuento { color: var(--warn); }
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+  .summary-row .big { font-size: 22px; font-weight: 700; }
+  .pill {
+    display: inline-block;
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 20px;
+    background: var(--card2);
+    color: var(--muted);
+    margin-left: 6px;
+  }
+  .note {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 16px;
+    line-height: 1.5;
+  }
+  .reset-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 11px;
+    cursor: pointer;
+  }
+  .reset-btn:hover { color: var(--text); border-color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>💰 Calculadora de Salario Neto — El Salvador</h1>
+  <div class="sub">Lógica validada contra recibos reales (ISSS, AFP, ISR con tope mensual de ISSS acumulado entre quincenas)</div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Quincena 1 <button class="reset-btn" onclick="resetQ(1)">limpiar</button></h2>
+      <label>Salario base ($)</label>
+      <input type="number" id="q1_salario" value="1000" oninput="calc()">
+
+      <label>Bonificación ($)</label>
+      <input type="number" id="q1_bonoesp" value="0" oninput="calc()">
+
+      <label>Otros descuentos (préstamos, etc.) ($)</label>
+      <input type="number" id="q1_otros_desc" value="0" oninput="calc()">
+    </div>
+
+    <div class="card">
+      <h2>Quincena 2 <button class="reset-btn" onclick="resetQ(2)">limpiar</button></h2>
+      <label>Salario base ($)</label>
+      <input type="number" id="q2_salario" value="1000" oninput="calc()">
+
+      <label>Bonificación ($)</label>
+      <input type="number" id="q2_bonoesp" value="0" oninput="calc()">
+
+      <label>Otros descuentos (préstamos, etc.) ($)</label>
+      <input type="number" id="q2_otros_desc" value="0" oninput="calc()">
+    </div>
+  </div>
+
+  <div class="results">
+    <table id="resultsTable">
+      <thead>
+        <tr>
+          <th>Concepto</th>
+          <th class="num">Quincena 1</th>
+          <th class="num">Quincena 2</th>
+          <th class="num">Mes</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+
+    <div class="summary-row">
+      <div>
+        <div style="color:var(--muted); font-size:12px;">NETO TOTAL DEL MES</div>
+        <div class="big neto" id="netoMes">$0.00</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="color:var(--muted); font-size:12px;">Total descuentos de ley</div>
+        <div class="big descuento" id="totalDescuentos">$0.00</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>Reglas aplicadas (validadas contra recibos reales del usuario):</strong><br>
+    • <strong>ISSS (3%):</strong> base = salario base + bonificación. Techo de <strong>$1,000 acumulado por mes</strong> entre ambas quincenas (no por quincena individual).<br>
+    • <strong>AFP (7.25%):</strong> misma base que ISSS, <strong>sin techo</strong>.<br>
+    • <strong>ISR:</strong> gravable = (salario base + bonificación) − ISSS − AFP de esa quincena. Se aplica la tabla de retención quincenal vigente (reforma 2025, exento hasta $275).<br>
+    • Los "otros descuentos" (préstamos, etc.) se restan después de calcular el neto de ley, igual que en tu recibo.
+  </div>
+</div>
+
+<script>
+function isrQuincenal(gravable) {
+  if (gravable <= 275) return 0;
+  if (gravable <= 447.62) return 8.835 + 0.10 * (gravable - 275);
+  if (gravable <= 1019.05) return 30.00 + 0.20 * (gravable - 447.62);
+  return 144.285 + 0.30 * (gravable - 1019.05);
+}
+
+function fmt(n) {
+  return '$' + n.toFixed(2);
+}
+
+function resetQ(n) {
+  ['salario','bonoesp','otros_desc'].forEach(f => {
+    document.getElementById('q'+n+'_'+f).value = 0;
+  });
+  calc();
+}
+
+function calc() {
+  const get = id => parseFloat(document.getElementById(id).value) || 0;
+
+  const q = [1,2].map(n => ({
+    salario: get('q'+n+'_salario'),
+    bonoesp: get('q'+n+'_bonoesp'),
+    otrosDesc: get('q'+n+'_otros_desc'),
+  }));
+
+  let issLeftCap = 1000; // techo mensual acumulado
+  const rows = [];
+
+  q.forEach((x, i) => {
+    const baseCotizable = x.salario + x.bonoesp;
+    const baseIsss = Math.min(baseCotizable, issLeftCap);
+    const isss = +(baseIsss * 0.03).toFixed(2);
+    issLeftCap = Math.max(0, issLeftCap - baseCotizable);
+
+    const afp = +(baseCotizable * 0.0725).toFixed(2);
+
+    const ingresoTotal = x.salario + x.bonoesp;
+    const gravable = ingresoTotal - isss - afp;
+    const isr = +isrQuincenal(gravable).toFixed(2);
+
+    const netoLey = ingresoTotal - isss - afp - isr;
+    const netoFinal = netoLey - x.otrosDesc;
+
+    rows.push({ ingresoTotal, isss, afp, isr, otrosDesc: x.otrosDesc, netoFinal });
+  });
+
+  const sum = (key) => rows[0][key] + rows[1][key];
+
+  const tbody = document.getElementById('tbody');
+  const lines = [
+    ['Ingresos totales', 'ingresoTotal', false],
+    ['ISSS', 'isss', true],
+    ['AFP', 'afp', true],
+    ['ISR', 'isr', true],
+    ['Otros descuentos', 'otrosDesc', true],
+  ];
+
+  tbody.innerHTML = lines.map(([label, key, isNeg]) => `
+    <tr>
+      <td>${label}</td>
+      <td class="num ${isNeg ? 'descuento' : ''}">${isNeg ? '-' : ''}${fmt(rows[0][key])}</td>
+      <td class="num ${isNeg ? 'descuento' : ''}">${isNeg ? '-' : ''}${fmt(rows[1][key])}</td>
+      <td class="num ${isNeg ? 'descuento' : ''}">${isNeg ? '-' : ''}${fmt(sum(key))}</td>
+    </tr>
+  `).join('') + `
+    <tr class="total">
+      <td>NETO A RECIBIR</td>
+      <td class="num neto">${fmt(rows[0].netoFinal)}</td>
+      <td class="num neto">${fmt(rows[1].netoFinal)}</td>
+      <td class="num neto">${fmt(sum('netoFinal'))}</td>
+    </tr>
+  `;
+
+  document.getElementById('netoMes').textContent = fmt(sum('netoFinal'));
+  document.getElementById('totalDescuentos').textContent = fmt(sum('isss') + sum('afp') + sum('isr'));
+}
+
+calc();
+</script>
+</body>
+</html>
